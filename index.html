@@ -1,4 +1,4 @@
-<!-- Fitters v1.2.0 -->
+<!-- Fitters v1.2.1 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -157,7 +157,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.2.0</span>
+    <span class="version">v1.2.1</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -170,7 +170,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.2.0</span>
+    <span class="version">v1.2.1</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -263,7 +263,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.2.0';
+const APP_VERSION = 'v1.2.1';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -598,18 +598,6 @@ function updateF1() {
 }
 
 function updateF2() {
-  var mats = fd('f2_materials') || [];
-  var matMap = {
-    'Bath': 'f2_r7', 'Shower Tray': 'f2_r8', 'Screen/Glass': 'f2_r9',
-    'Furniture, Mirror, Handles': 'f2_r10', 'Pan, Cistern, Seat': 'f2_r11',
-    'Basin': 'f2_r12', 'Taps, Wastes': 'f2_r13', 'Shower': 'f2_r14',
-    'Radiator or Valves': 'f2_r15', 'Wall Panels': 'f2_r16', 'Flooring': 'f2_r17',
-    'Ceiling': 'f2_r18', 'Trims, Silicone, Adhesive': 'f2_r19',
-    'Plumbing, Electrical': 'f2_r20', 'Building Materials': 'f2_r21'
-  };
-  Object.keys(matMap).forEach(function(k) {
-    mats.indexOf(k) > -1 ? showField(matMap[k]) : hideField(matMap[k]);
-  });
   var reqNo = fd('f2_request_no');
   var reqType = fd('f2_request_type');
   // F22: delivery date — type=Delivery AND req no 1 or 2
@@ -780,6 +768,12 @@ function textField(id, label, placeholder, required, hint) {
   var h = hint ? '<div class="field-hint">' + hint + '</div>' : '';
   return '<div class="field"><div class="field-label">' + label + req + '</div>' + h +
     '<input type="text" id="' + id + '" placeholder="' + (placeholder||'') + '" oninput="formData[\'' + id + '\']=this.value"></div>';
+}
+
+function postcodeField(id, label, placeholder, required) {
+  var req = required ? ' <span class="req">*</span>' : '';
+  return '<div class="field"><div class="field-label">' + label + req + '</div>' +
+    '<input type="text" id="' + id + '" placeholder="' + (placeholder||'') + '" style="text-transform:uppercase" oninput="formData[\'' + id + '\']=this.value.toUpperCase()"></div>';
 }
 
 function numField(id, label, placeholder, required, hint) {
@@ -981,33 +975,19 @@ f2: function() {
     'Radiator or Valves','Screen/Glass','Shower','Shower Tray',
     'Taps, Wastes','Trims, Silicone, Adhesive','Wall Panels'];
 
-  var matFields = {
-    'Basin':'f2_r7','Bath':'f2_r8','Building Materials':'f2_r9',
-    'Ceiling':'f2_r10','Flooring':'f2_r11',
-    'Furniture, Mirror, Handles':'f2_r12','Pan, Cistern, Seat':'f2_r13',
-    'Plumbing, Electrical':'f2_r14','Radiator or Valves':'f2_r15',
-    'Screen/Glass':'f2_r16','Shower':'f2_r17','Shower Tray':'f2_r18',
-    'Taps, Wastes':'f2_r19','Trims, Silicone, Adhesive':'f2_r20',
-    'Wall Panels':'f2_r21'
-  };
-
   var html = '<div class="form-title">Material Request</div>' +
     '<div class="form-subtitle">Request missing or additional materials from the warehouse</div>' +
     textField('f2_job_id', 'Job ID', 'Insert Clients 4 digit Job ID', true, 'Insert Clients 4 digit Job ID.') +
-    textField('f2_postcode', 'Postcode', 'Insert Site Postcode', true) +
+    postcodeField('f2_postcode', 'Postcode', 'Insert Site Postcode', true) +
     '<div class="field"><div class="field-label">Request Type <span class="req">*</span></div>' +
     '<div class="field-hint">Are you Collecting from Warehouse or Requesting Delivery</div>' +
     '<div class="yn-group">' +
-    '<button class="yn-btn" id="f2_yn_rt_c" onclick="formData[\'f2_request_type\']=\'Collection\';g(\'f2_yn_rt_c\').className=\'yn-btn selected-yes\';g(\'f2_yn_rt_d\').className=\'yn-btn\';updateConditionals()">Collection</button>' +
-    '<button class="yn-btn" id="f2_yn_rt_d" onclick="formData[\'f2_request_type\']=\'Delivery\';g(\'f2_yn_rt_d\').className=\'yn-btn selected-yes\';g(\'f2_yn_rt_c\').className=\'yn-btn\';updateConditionals()">Delivery</button>' +
+    '<button class="yn-btn" id="f2_yn_rt_c" data-action="f2-reqtype" data-value="Collection">Collection</button>' +
+    '<button class="yn-btn" id="f2_yn_rt_d" data-action="f2-reqtype" data-value="Delivery">Delivery</button>' +
     '</div></div>' +
     selectField('f2_request_no', 'Request No.', ['1','2','3','4'], true, 'How many times have you requested materials for this Install') +
     radioGroup('f2_reason', 'Reason', ['Undelivered','Wrong QTY Delivered','Client Change','Damaged during Install','Additional Items'], true, 'f2_reason_rg') +
     checkGroup('f2_materials', 'Materials Requested', matOptions, true);
-
-  Object.keys(matFields).forEach(function(mat) {
-    html += wrap(matFields[mat], textArea('f2_mat_' + matFields[mat], mat, 'Provide Product Description', true), true);
-  });
 
   html += wrap('f2_r22', '<div class="field"><div class="field-label">Requested Delivery Date/Time <span class="req">*</span></div>' +
     '<div class="field-hint">BEFORE 12:30 SAME DAY / AFTER 12:30 NEXT DAY / 09:00-12:30 / 13:00+</div>' +
@@ -1053,7 +1033,7 @@ f4: function() {
   return '<div class="form-title">Installation Damage Report</div>' +
     '<div class="form-subtitle">Log water escape or property damage immediately</div>' +
     textField('f4_job_id', 'Job ID', 'Insert Clients 4 digit Job ID', true, 'Insert Clients 4 digit Job ID.') +
-    textField('f4_postcode', 'Postcode', 'Insert Site Postcode', true) +
+    postcodeField('f4_postcode', 'Postcode', 'Insert Site Postcode', true) +
     radioGroup('f4_damage_type', 'Damage Type', ['Water Escape','Damage to Property'], true, 'f4_dt_rg') +
     '<div class="field-hint" style="margin-top:-12px;margin-bottom:16px">Select BOTH if a Water Escape Has Resulted in Damage to Property</div>' +
     wrap('f4_r4', textArea('f4_water_cause', 'Cause of Water Escape', 'Explain Where the Water escape initiated from', true), true) +
@@ -1075,7 +1055,7 @@ f5: function() {
   return '<div class="form-title">Install Completion</div>' +
     '<div class="form-subtitle">Complete after finishing the installation</div>' +
     textField('f5_job_id', 'Job ID', 'Insert Clients 4 digit Job ID', true, 'Insert Clients 4 digit Job ID.') +
-    textField('f5_postcode', 'Postcode', 'Insert Site Postcode', true) +
+    postcodeField('f5_postcode', 'Postcode', 'Insert Site Postcode', true) +
     yn('f5_return_visit', 'f5_yn_rv_y', 'f5_yn_rv_n', 'Does this Installation Require a Return Visit') +
     '<div class="field-hint" style="margin-top:-12px;margin-bottom:16px">Is the Installation 100% Complete</div>' +
 
@@ -1390,6 +1370,18 @@ async function pushVersion() {
     });
   } catch(e) { console.warn('Version push failed:', e); }
 }
+
+// ── DELEGATED CLICK HANDLER ───────────────────────────────────────────────
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  if (btn.dataset.action === 'f2-reqtype') {
+    formData['f2_request_type'] = btn.dataset.value;
+    g('f2_yn_rt_c').className = 'yn-btn' + (btn.dataset.value === 'Collection' ? ' selected-yes' : '');
+    g('f2_yn_rt_d').className = 'yn-btn' + (btn.dataset.value === 'Delivery'   ? ' selected-yes' : '');
+    updateConditionals();
+  }
+});
 
 // Expose to global scope so onclick attributes can reach them
 window.showForm = showForm;
