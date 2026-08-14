@@ -1,4 +1,4 @@
-<!-- Fitters v1.2.2 -->
+<!-- Fitters v1.2.3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -263,7 +263,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.2.2';
+const APP_VERSION = 'v1.2.3';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -407,7 +407,7 @@ async function createTalliRemedial(jobRef, fault, itemName, notes) {
       notes:         notes || null,
       source:        'fitter',
       remedial_type: 'delivery',
-      status:        'pending'
+      status:        'ready'
     })
   });
 }
