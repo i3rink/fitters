@@ -1,4 +1,4 @@
-<!-- Fitters v1.2.3 -->
+<!-- Fitters v1.3.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,6 +147,33 @@ select option{background:var(--surface2)}
 .success-btn{margin-top:16px;padding:13px 32px;background:var(--accent);color:#0f0f1a;font-family:var(--font);font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer}
 
 @media(max-width:480px){.stars .star{font-size:28px}}
+
+/* PACKING SLIP CHECK */
+.ps-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:18px}
+.ps-section.locked{opacity:.6;pointer-events:none}
+.ps-header{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.ps-sub{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.4}
+.ps-load-btn{width:100%;padding:11px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.ps-load-btn:hover{opacity:.88}
+.ps-load-btn:disabled{opacity:.45;cursor:not-allowed}
+.ps-loading{text-align:center;padding:20px;color:var(--muted);font-size:13px}
+.ps-no-items{background:#1a1a2e;border:1px solid var(--amber);border-radius:8px;padding:12px;font-size:13px;color:#fbbf24;line-height:1.5;margin-bottom:12px}
+.ps-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.ps-item-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.ps-item-qty{font-size:12px;color:var(--muted);margin-bottom:10px}
+.ps-status-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0}
+.ps-btn{flex:1;min-width:calc(50% - 3px);padding:9px 6px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s}
+.ps-btn.active-delivered{background:#166534;border-color:#16a34a;color:#bbf7d0}
+.ps-btn.active-missing{background:#7f1d1d;border-color:#dc2626;color:#fecaca}
+.ps-btn.active-damaged{background:#78350f;border-color:#d97706;color:#fde68a}
+.ps-btn.active-wrong{background:#1e1b4b;border-color:#6366f1;color:#c7d2fe}
+.ps-wrong-input{margin-top:8px}
+.ps-wrong-input input{width:100%;background:var(--surface);border:1px solid #6366f1;border-radius:7px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+.ps-confirm-btn{width:100%;padding:12px;background:var(--accent);color:#0f0f1a;border:none;border-radius:8px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:opacity .15s}
+.ps-confirm-btn:hover{opacity:.88}
+.ps-confirm-btn:disabled{opacity:.45;cursor:not-allowed}
+.ps-done-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--green);margin-left:auto}
+.ps-gated{display:none}
 </style>
 </head>
 <body>
@@ -157,7 +184,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.2.2</span>
+    <span class="version">v1.3.0</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -170,7 +197,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.2.2</span>
+    <span class="version">v1.3.0</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -263,7 +290,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.2.3';
+const APP_VERSION = 'v1.3.0';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -339,6 +366,139 @@ async function talliSb(path, opts) {
   }, fetchOpts));
   if (!res.ok) { var e = await res.text(); throw new Error(e); }
   return res.status === 204 ? null : res.json();
+}
+
+// ── PACKING SLIP CHECK ────────────────────────────────────────────────────
+var packingCheck = {
+  loaded:    false,   // true once lookup succeeded
+  confirmed: false,   // true once fitter taps Confirm
+  sessionId: null,
+  items: []           // [{ key, name, pickedQty, status, wrongDetail }]
+};
+
+async function loadPackingSlip() {
+  var jobId = (formData['f1_job_id'] || '').trim();
+  if (!jobId) { toast('Enter Job ID first', 'error'); return; }
+
+  var btn   = g('ps_load_btn');
+  var panel = g('ps_items_panel');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  panel.innerHTML = '<div class="ps-loading"><span class="spinner"></span> Fetching packing slip…</div>';
+
+  try {
+    var normJobRef = /^\d+$/.test(jobId) ? 'Q' + jobId : jobId;
+    var encoded    = encodeURIComponent(JSON.stringify([normJobRef]));
+    var rows       = await talliSb('sessions?jobs=cs.' + encoded + '&select=id,master_list&order=created_at.desc&limit=1');
+
+    if (!rows || !rows.length) {
+      panel.innerHTML = '<div class="ps-no-items">⚠️ No packing slip found for Job ID <strong>' + esc(jobId) + '</strong>.<br>Check the Job ID and try again, or contact the office.</div>';
+      btn.disabled = false;
+      btn.textContent = 'Load Packing Slip';
+      return;
+    }
+
+    packingCheck.sessionId = rows[0].id;
+    var ml = rows[0].master_list;
+    var masterList = Array.isArray(ml) ? ml : (typeof ml === 'string' ? JSON.parse(ml) : []);
+
+    packingCheck.items = masterList
+      .filter(function(item) { return item.jobQtys && item.jobQtys[normJobRef] !== undefined; })
+      .map(function(item) {
+        return {
+          key:         item.key  || '',
+          name:        item.name || item.key || 'Unknown item',
+          pickedQty:   item.jobQtys[normJobRef],
+          status:      '',
+          wrongDetail: ''
+        };
+      });
+
+    if (!packingCheck.items.length) {
+      panel.innerHTML = '<div class="ps-no-items">⚠️ Packing slip found but no items listed for Job ID <strong>' + esc(jobId) + '</strong>. Contact the office.</div>';
+      btn.disabled = false;
+      btn.textContent = 'Load Packing Slip';
+      return;
+    }
+
+    packingCheck.loaded    = true;
+    packingCheck.confirmed = false;
+    renderPackingItems();
+    btn.textContent = 'Reload';
+    btn.disabled = false;
+    // Lock Job ID once loaded
+    var jid = g('f1_job_id'); if (jid) jid.readOnly = true;
+
+  } catch(err) {
+    console.error('Packing slip lookup failed:', err);
+    panel.innerHTML = '<div class="ps-no-items">⚠️ Could not load packing slip — check your connection and try again.</div>';
+    btn.disabled = false;
+    btn.textContent = 'Load Packing Slip';
+  }
+}
+
+function renderPackingItems() {
+  var panel = g('ps_items_panel');
+  if (!panel) return;
+  var html = '';
+  packingCheck.items.forEach(function(item, idx) {
+    var s = item.status;
+    html += '<div class="ps-item" id="ps_item_' + idx + '">' +
+      '<div class="ps-item-name">' + esc(item.name) + '</div>' +
+      '<div class="ps-item-qty">Picked qty: ' + esc(String(item.pickedQty)) + '</div>' +
+      '<div class="ps-status-btns">' +
+        '<button class="ps-btn' + (s==='delivered' ? ' active-delivered' : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="delivered">✓ Delivered</button>' +
+        '<button class="ps-btn' + (s==='missing'   ? ' active-missing'   : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="missing">✗ Missing</button>' +
+        '<button class="ps-btn' + (s==='damaged'   ? ' active-damaged'   : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="damaged">⚠ Damaged</button>' +
+        '<button class="ps-btn' + (s==='wrong'     ? ' active-wrong'     : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="wrong">↔ Wrong item</button>' +
+      '</div>' +
+      '<div class="ps-wrong-input" id="ps_wrong_' + idx + '" style="' + (s==='wrong' ? '' : 'display:none') + '">' +
+        '<input type="text" placeholder="What was delivered instead? e.g. 1500mm bath" ' +
+          'id="ps_wrong_detail_' + idx + '" ' +
+          'value="' + esc(item.wrongDetail) + '" ' +
+          'data-action="ps-wrong-detail" data-idx="' + idx + '">' +
+      '</div>' +
+    '</div>';
+  });
+
+  // Confirm button — only enabled when all items have a status
+  var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){ return i.status !== ''; });
+  html += '<button class="ps-confirm-btn" id="ps_confirm_btn" ' + (allDone ? '' : 'disabled') + ' data-action="ps-confirm">Confirm Packing Check</button>';
+  panel.innerHTML = html;
+}
+
+function setPsStatus(idx, status) {
+  if (packingCheck.confirmed) return;
+  packingCheck.items[idx].status = status;
+  renderPackingItems();
+  // Re-attach wrong-detail value listeners since innerHTML rebuilt
+}
+
+function setPsWrongDetail(idx, val) {
+  packingCheck.items[idx].wrongDetail = val;
+}
+
+function confirmPackingCheck() {
+  // Validate all items have a status
+  var missing = packingCheck.items.filter(function(i){ return !i.status; });
+  if (missing.length) { toast('Please check every item before confirming', 'error'); return; }
+  // Validate wrong-item details
+  var wrongNoDetail = packingCheck.items.filter(function(i){ return i.status === 'wrong' && !i.wrongDetail.trim(); });
+  if (wrongNoDetail.length) { toast('Please describe what was delivered for Wrong item entries', 'error'); return; }
+
+  packingCheck.confirmed = true;
+
+  // Lock the section visually
+  var sec = g('ps_section');
+  if (sec) sec.classList.add('locked');
+  var hdr = g('ps_header_badge');
+  if (hdr) hdr.style.display = 'inline-flex';
+
+  // Unlock the rest of f1
+  var gated = g('f1_gated');
+  if (gated) gated.style.display = '';
+
+  toast('Packing check confirmed', 'success');
 }
 
 // ── IMAGE COMPRESSION ─────────────────────────────────────────────────────
@@ -561,12 +721,10 @@ var conditionalMap = {
 };
 
 function updateF1() {
-  var aw = fd('f1_additional_works');
+  var aw    = fd('f1_additional_works');
   var works = fd('f1_works_list') || [];
-  var matOk = fd('f1_materials_ok');
-  var remReason = fd('f1_remedial_reason');
   var feeOk = fd('f1_fee_confirmed');
-  var fpOk = fd('f1_floor_plan');
+  var fpOk  = fd('f1_floor_plan');
 
   // Field 7: works selector — show if additional works = Yes
   aw === 'Yes' ? showField('f1_r7') : hideField('f1_r7');
@@ -578,12 +736,6 @@ function updateF1() {
   works.indexOf('Shower Waste')   > -1 ? showField('f1_r11') : hideField('f1_r11');
   works.indexOf('W.C. Waste')     > -1 ? showField('f1_r12') : hideField('f1_r12');
   works.indexOf('Anything Else')  > -1 ? showField('f1_r13') : hideField('f1_r13');
-
-  // Fields 15-17: remedial flow — show if materials not ok
-  matOk === 'No' ? showField('f1_r15') : hideField('f1_r15');
-  matOk === 'No' ? showField('f1_r16') : hideField('f1_r16');
-  // Field 17 (damage photos): show if reason selected
-  (matOk === 'No' && remReason) ? showField('f1_r17') : hideField('f1_r17');
 
   // Field 20: fee query — show if fee not confirmed
   feeOk === 'No' ? showField('f1_r20') : hideField('f1_r20');
@@ -872,10 +1024,32 @@ var formRenderers = {
 f1: function() {
   f1PreInstallFiles = [];
   f1DamageFiles = [];
+  packingCheck = { loaded: false, confirmed: false, sessionId: null, items: [] };
+
   return '<div class="form-title">Pre Install</div>' +
     '<div class="form-subtitle">Complete before removing or starting any installation work</div>' +
 
-    textField('f1_job_id', 'Job ID', 'Enter 4-digit Job ID', true, 'Enter 4-digit Job ID') +
+    // Job ID — load packing slip inline
+    '<div class="field">' +
+      '<div class="field-label">Job ID <span class="req">*</span></div>' +
+      '<div class="field-hint">Enter 4-digit Job ID</div>' +
+      '<input type="text" id="f1_job_id" data-field="f1_job_id" placeholder="Enter 4-digit Job ID">' +
+    '</div>' +
+
+    // Packing slip check section — mandatory, gates everything else
+    '<div class="ps-section" id="ps_section">' +
+      '<div class="ps-header">' +
+        '📦 Packing Slip Check' +
+        '<span class="ps-done-badge" id="ps_header_badge" style="display:none">✓ Confirmed</span>' +
+      '</div>' +
+      '<div class="ps-sub">You must check every delivered item against the packing slip before completing this form. Enter the Job ID above then tap Load.</div>' +
+      '<button class="ps-load-btn" id="ps_load_btn" data-action="ps-load">Load Packing Slip</button>' +
+      '<div id="ps_items_panel" style="margin-top:12px"></div>' +
+    '</div>' +
+
+    // GATED — everything below hidden until packing check is confirmed
+    '<div id="f1_gated" class="ps-gated">' +
+
     textField('f1_address', 'Address & Postcode', 'Enter full address and postcode', true) +
 
     '<div class="field">' +
@@ -911,42 +1085,6 @@ f1: function() {
     wrap('f1_r12', textArea('f1_w_wc',       'W.C. Waste — details',      'Describe the W.C. waste work', true), true) +
     wrap('f1_r13', textArea('f1_w_other',    'Anything Else — details',   'Describe any other additional works', true), true) +
 
-    yn('f1_materials_ok', 'f1_yn_mat_y', 'f1_yn_mat_n', 'Confirm ALL Materials have been Delivered Correctly and Undamaged') +
-    '<div class="field-hint" style="margin-top:-12px;margin-bottom:16px">Check every item against your job sheet before confirming</div>' +
-
-    wrap('f1_r15',
-      '<div class="field"><div class="field-label">Reason for Remedial <span class="req">*</span></div>' +
-      '<select id="f1_remedial_reason" data-field="f1_remedial_reason" data-conditional="1">' +
-        '<option value="">Select reason...</option>' +
-        '<option value="Damaged item">Damaged item</option>' +
-        '<option value="Wrong item delivered">Wrong item delivered</option>' +
-        '<option value="Missing item">Missing item</option>' +
-        '<option value="Item delivered but incorrect size/spec">Item delivered but incorrect size/spec</option>' +
-        '<option value="Other (see notes)">Other (see notes)</option>' +
-      '</select></div>' +
-      textArea('f1_remedial_notes', 'Remedial Notes', 'Full details — item name, description, what is wrong', true),
-    true) +
-
-    wrap('f1_r16',
-      '<div class="task-box" style="margin-bottom:18px">' +
-        '<div class="task-title">Please Complete a Material Request Form</div>' +
-        '<div class="task-body">Submit a Material Request form so the warehouse team can action this immediately.</div>' +
-      '</div>',
-    true) +
-
-    wrap('f1_r17',
-      '<div class="field">' +
-        '<div class="field-label">Upload Pictures of Damaged/Incorrect Goods <span class="req">*</span></div>' +
-        '<div class="field-hint">Photograph every affected item clearly</div>' +
-        '<div class="file-upload" onclick="g(\'f1_damage_input\').click()">' +
-          '<input type="file" id="f1_damage_input" accept="image/*" multiple style="display:none">' +
-          '<div class="up-icon">📷</div>' +
-          '<div class="up-text">Tap to select photos</div>' +
-        '</div>' +
-        '<div class="file-preview" id="f1_damage_preview"></div>' +
-      '</div>',
-    true) +
-
     numField('f1_proposed_fee', 'Currently Proposed Installation Fee £', 'Labour payment from your job sheet', true) +
 
     yn('f1_fee_confirmed', 'f1_yn_fee_y', 'f1_yn_fee_n', 'Installation Fee Confirmed?') +
@@ -966,7 +1104,9 @@ f1: function() {
     radioGroup('f1_pipeline', 'Are you Happy to Start the Installation (Pipeline)',
       ['Happy to Proceed','Awaiting Manager Decision','Install Declined'], true, 'f1_pip_rg') +
 
-    sigField('f1_sig', 'Fitters Signature');
+    sigField('f1_sig', 'Fitters Signature') +
+
+    '</div>'; // end f1_gated
 },
 // ── FORM 2 — MATERIAL REQUEST ─────────────────────────────────────────────
 f2: function() {
@@ -1176,6 +1316,12 @@ function validateForm() {
 
 // ── SUBMIT ────────────────────────────────────────────────────────────────
 async function submitForm() {
+  // F1: packing check must be confirmed before anything else
+  if (currentForm === 'f1' && !packingCheck.confirmed) {
+    toast('Complete and confirm the packing slip check first', 'error');
+    return;
+  }
+
   var errors = validateForm();
   if (errors.length) {
     toast('Please complete: ' + errors[0], 'error');
@@ -1213,22 +1359,38 @@ async function submitForm() {
 
     await sbInsert(tableMap[currentForm], payload);
 
-    // F1: if materials not ok, write remedial to Talli
-    if (currentForm === 'f1' && formData['f1_materials_ok'] === 'No' && formData['f1_remedial_reason']) {
-      try {
-        await createTalliRemedial(
-          formData['f1_job_id'] || '',
-          formData['f1_remedial_reason'],
-          null,
-          formData['f1_remedial_notes'] || null
-        );
-      } catch(re) {
-        console.warn('Remedial write to Talli failed:', re);
-        // Don't block submission — form data is saved, remedial can be re-raised
-        toast('Form saved. Remedial flag to warehouse failed — please notify Reiss directly.', 'error');
-        g('success-body').textContent = formTitles[currentForm] + ' submitted. Note: remedial alert to warehouse failed.';
-        showScreen('success');
-        return;
+    // F1: write one remedial row per non-delivered packing slip item
+    if (currentForm === 'f1' && packingCheck.confirmed) {
+      var problemItems = packingCheck.items.filter(function(i){ return i.status !== 'delivered'; });
+      if (problemItems.length) {
+        var jobRef = formData['f1_job_id'] || '';
+        var remFailed = false;
+        for (var ri = 0; ri < problemItems.length; ri++) {
+          var pItem = problemItems[ri];
+          var fault, notes;
+          if (pItem.status === 'missing') {
+            fault = 'Missing';
+            notes = null;
+          } else if (pItem.status === 'damaged') {
+            fault = 'Damaged';
+            notes = null;
+          } else { // wrong
+            fault = 'Wrong item';
+            notes = 'Expected: ' + esc(pItem.name) + ' — Delivered: ' + esc(pItem.wrongDetail.trim());
+          }
+          try {
+            await createTalliRemedial(jobRef, fault, pItem.name, notes);
+          } catch(re) {
+            console.warn('Remedial write failed for item:', pItem.name, re);
+            remFailed = true;
+          }
+        }
+        if (remFailed) {
+          toast('Form saved. Some remedial alerts to warehouse failed — notify Reiss directly.', 'error');
+          g('success-body').textContent = formTitles[currentForm] + ' submitted. Note: some remedial alerts to warehouse failed.';
+          showScreen('success');
+          return;
+        }
       }
     }
 
@@ -1291,30 +1453,41 @@ function buildPayload() {
   var specific = {};
   var d = formData;
 
-  if (currentForm === 'f1') specific = {
-    job_id:                d.f1_job_id,
-    address:               d.f1_address,
-    floor_plan_possible:   d.f1_floor_plan,
-    additional_works:      d.f1_additional_works,
-    works_list:            d.f1_works_list,
-    works_repipe:          d.f1_w_repipe,
-    works_resheet:         d.f1_w_resheet,
-    works_subfloor:        d.f1_w_subfloor,
-    works_shower_waste:    d.f1_w_shower,
-    works_wc_waste:        d.f1_w_wc,
-    works_other:           d.f1_w_other,
-    materials_ok:          d.f1_materials_ok,
-    remedial_reason:       d.f1_remedial_reason || null,
-    remedial_notes:        d.f1_remedial_notes || null,
-    proposed_fee:          d.f1_proposed_fee,
-    fee_confirmed:         d.f1_fee_confirmed,
-    fee_query:             d.f1_fee_query || null,
-    additional_labour_fee: d.f1_additional_labour_fee || null,
-    aw_labour_request:     d.f1_aw_labour_request || null,
-    new_labour_total:      d.f1_new_labour_total || null,
-    pipeline:              d.f1_pipeline,
-    signature:             getSig('f1_sig')
-  };
+  if (currentForm === 'f1') {
+    // Build a summary of the packing check result
+    var psResult = 'not_checked';
+    var psIssues = [];
+    if (packingCheck.confirmed) {
+      var anyIssue = packingCheck.items.some(function(i){ return i.status !== 'delivered'; });
+      psResult = anyIssue ? 'issues_found' : 'all_delivered';
+      packingCheck.items.filter(function(i){ return i.status !== 'delivered'; }).forEach(function(i){
+        psIssues.push({ item: i.name, status: i.status, detail: i.wrongDetail || null });
+      });
+    }
+    specific = {
+      job_id:                d.f1_job_id,
+      address:               d.f1_address,
+      floor_plan_possible:   d.f1_floor_plan,
+      additional_works:      d.f1_additional_works,
+      works_list:            d.f1_works_list,
+      works_repipe:          d.f1_w_repipe,
+      works_resheet:         d.f1_w_resheet,
+      works_subfloor:        d.f1_w_subfloor,
+      works_shower_waste:    d.f1_w_shower,
+      works_wc_waste:        d.f1_w_wc,
+      works_other:           d.f1_w_other,
+      packing_check_result:  psResult,
+      packing_check_issues:  psIssues.length ? JSON.stringify(psIssues) : null,
+      proposed_fee:          d.f1_proposed_fee,
+      fee_confirmed:         d.f1_fee_confirmed,
+      fee_query:             d.f1_fee_query || null,
+      additional_labour_fee: d.f1_additional_labour_fee || null,
+      aw_labour_request:     d.f1_aw_labour_request || null,
+      new_labour_total:      d.f1_new_labour_total || null,
+      pipeline:              d.f1_pipeline,
+      signature:             getSig('f1_sig')
+    };
+  }
   if (currentForm === 'f2') specific = {
     job_id: d.f2_job_id, postcode: d.f2_postcode,
     request_type: d.f2_request_type, request_no: d.f2_request_no,
@@ -1396,7 +1569,26 @@ document.addEventListener('click', function(e) {
     g('f2_yn_rt_d').className = 'yn-btn' + (btn.dataset.value === 'Delivery'   ? ' selected-yes' : '');
     updateConditionals();
   }
+  if (btn.dataset.action === 'ps-status') {
+    setPsStatus(parseInt(btn.dataset.idx, 10), btn.dataset.status);
+  }
+  if (btn.dataset.action === 'ps-confirm') {
+    confirmPackingCheck();
+  }
+  if (btn.dataset.action === 'ps-load') {
+    loadPackingSlip();
+  }
 });
+
+document.addEventListener('input', function(e) {
+  var el = e.target;
+  if (el.dataset.action === 'ps-wrong-detail') {
+    setPsWrongDetail(parseInt(el.dataset.idx, 10), el.value);
+    // Re-check confirm button state
+    var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){ return i.status !== ''; });
+    var cb = g('ps_confirm_btn'); if (cb) cb.disabled = !allDone;
+  }
+}, true); // capture phase so it fires even after innerHTML rebuild
 
 // Expose to global scope so onclick attributes can reach them
 window.showForm = showForm;
@@ -1405,6 +1597,8 @@ window.setYN = setYN;
 window.toggleCheck = toggleCheck;
 window.toggleRadio = toggleRadio;
 window.submitForm = submitForm;
+window.loadPackingSlip = loadPackingSlip;
+window.confirmPackingCheck = confirmPackingCheck;
 window.g = g;
 
 // App starts on gate screen — initUser() and pushVersion() fire on HELM_USER message
