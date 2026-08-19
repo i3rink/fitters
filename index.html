@@ -1,4 +1,4 @@
-<!-- Fitters v1.3.1 -->
+<!-- Fitters v1.3.2 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -159,8 +159,9 @@ select option{background:var(--surface2)}
 .ps-loading{text-align:center;padding:20px;color:var(--muted);font-size:13px}
 .ps-no-items{background:#1a1a2e;border:1px solid var(--amber);border-radius:8px;padding:12px;font-size:13px;color:#fbbf24;line-height:1.5;margin-bottom:12px}
 .ps-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
-.ps-item-name{font-size:14px;font-weight:600;margin-bottom:2px}
-.ps-item-qty{font-size:12px;color:var(--muted);margin-bottom:10px}
+.ps-item-name{font-size:14px;font-weight:600;margin-bottom:8px}
+.ps-item-qty{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:12px}
+.ps-item-qty span{font-size:11px;font-weight:400;color:var(--muted)}
 .ps-status-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0}
 .ps-btn{flex:1;min-width:calc(50% - 3px);padding:9px 6px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s}
 .ps-btn.active-delivered{background:#166534;border-color:#16a34a;color:#bbf7d0}
@@ -184,7 +185,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.3.1</span>
+    <span class="version">v1.3.2</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -197,7 +198,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.3.1</span>
+    <span class="version">v1.3.2</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -290,7 +291,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.3.1';
+const APP_VERSION = 'v1.3.2';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -455,7 +456,7 @@ function renderPackingItems() {
     var s = item.status;
     html += '<div class="ps-item" id="ps_item_' + idx + '">' +
       '<div class="ps-item-name">' + esc(item.name) + '</div>' +
-      '<div class="ps-item-qty">Picked qty: ' + esc(String(item.pickedQty)) + '</div>' +
+      '<div class="ps-item-qty"><span>Picked qty</span>' + esc(String(item.pickedQty)) + '</div>' +
       '<div class="ps-status-btns">' +
         '<button class="ps-btn' + (s==='delivered' ? ' active-delivered' : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="delivered">✓ Delivered</button>' +
         '<button class="ps-btn' + (s==='missing'   ? ' active-missing'   : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="missing">✗ Missing</button>' +
