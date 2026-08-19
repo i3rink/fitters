@@ -1,4 +1,4 @@
-<!-- Fitters v1.3.2 -->
+<!-- Fitters v1.3.3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -174,6 +174,8 @@ select option{background:var(--surface2)}
 .ps-confirm-btn:hover{opacity:.88}
 .ps-confirm-btn:disabled{opacity:.45;cursor:not-allowed}
 .ps-done-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--green);margin-left:auto}
+.ps-abandon-btn{width:100%;padding:9px;background:none;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:12px;cursor:pointer;margin-top:8px;transition:color .15s,border-color .15s}
+.ps-abandon-btn:hover{color:var(--red);border-color:var(--red)}
 .ps-gated{display:none}
 </style>
 </head>
@@ -185,7 +187,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.3.2</span>
+    <span class="version">v1.3.3</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -198,7 +200,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.3.2</span>
+    <span class="version">v1.3.3</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -291,7 +293,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.3.2';
+const APP_VERSION = 'v1.3.3';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -475,6 +477,7 @@ function renderPackingItems() {
   // Confirm button — only enabled when all items have a status
   var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){ return i.status !== ''; });
   html += '<button class="ps-confirm-btn" id="ps_confirm_btn" ' + (allDone ? '' : 'disabled') + ' data-action="ps-confirm">Confirm Packing Check</button>';
+  html += '<button class="ps-abandon-btn" data-action="ps-abandon">Wrong job? Start over</button>';
   panel.innerHTML = html;
 }
 
@@ -490,10 +493,8 @@ function setPsWrongDetail(idx, val) {
 }
 
 function confirmPackingCheck() {
-  // Validate all items have a status
   var missing = packingCheck.items.filter(function(i){ return !i.status; });
   if (missing.length) { toast('Please check every item before confirming', 'error'); return; }
-  // Validate wrong-item details
   var wrongNoDetail = packingCheck.items.filter(function(i){ return i.status === 'wrong' && !i.wrongDetail.trim(); });
   if (wrongNoDetail.length) { toast('Please describe what was delivered for Wrong item entries', 'error'); return; }
 
@@ -509,7 +510,27 @@ function confirmPackingCheck() {
   var gated = g('f1_gated');
   if (gated) gated.style.display = '';
 
+  // Show the global submit button now
+  var submitBtn = g('submit-btn');
+  if (submitBtn) submitBtn.style.display = '';
+
   toast('Packing check confirmed', 'success');
+}
+
+function abandonPackingCheck() {
+  if (!confirm('Start over? This will clear the loaded packing slip and unlock the Job ID field.')) return;
+  packingCheck = { loaded: false, confirmed: false, sessionId: null, items: [] };
+  // Unlock job ID
+  var jid = g('f1_job_id'); if (jid) { jid.readOnly = false; jid.value = ''; }
+  formData['f1_job_id'] = '';
+  // Reset panel
+  var panel = g('ps_items_panel'); if (panel) panel.innerHTML = '';
+  var btn = g('ps_load_btn'); if (btn) { btn.disabled = false; btn.textContent = 'Load Packing Slip'; }
+  var sec = g('ps_section'); if (sec) sec.classList.remove('locked');
+  var hdr = g('ps_header_badge'); if (hdr) hdr.style.display = 'none';
+  // Re-hide submit and gated section
+  var submitBtn = g('submit-btn'); if (submitBtn) submitBtn.style.display = 'none';
+  var gated = g('f1_gated'); if (gated) gated.style.display = 'none';
 }
 
 // ── IMAGE COMPRESSION ─────────────────────────────────────────────────────
@@ -894,6 +915,9 @@ function showForm(formId) {
   sigPads = {};
   var body = g('form-body');
   body.innerHTML = formRenderers[formId]();
+  // Hide the global submit button on f1 until packing check is confirmed
+  var footer = g('submit-btn');
+  if (footer) footer.style.display = formId === 'f1' ? 'none' : '';
   showScreen('form');
   // Init components
   setTimeout(function() {
@@ -1586,6 +1610,9 @@ document.addEventListener('click', function(e) {
   if (btn.dataset.action === 'ps-confirm') {
     confirmPackingCheck();
   }
+  if (btn.dataset.action === 'ps-abandon') {
+    abandonPackingCheck();
+  }
   if (btn.dataset.action === 'ps-load') {
     loadPackingSlip();
   }
@@ -1610,6 +1637,7 @@ window.toggleRadio = toggleRadio;
 window.submitForm = submitForm;
 window.loadPackingSlip = loadPackingSlip;
 window.confirmPackingCheck = confirmPackingCheck;
+window.abandonPackingCheck = abandonPackingCheck;
 window.g = g;
 
 // App starts on gate screen — initUser() and pushVersion() fire on HELM_USER message
