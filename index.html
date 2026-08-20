@@ -1,4 +1,4 @@
-<!-- Fitters v1.4.3 -->
+<!-- Fitters v1.4.4 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -178,7 +178,20 @@ select option{background:var(--surface2)}
 .ps-abandon-btn:hover{color:var(--red);border-color:var(--red)}
 .ps-gated{display:none}
 
-/* SURVEY REVIEW GATE */
+/* NATIVE SURVEY PANEL */
+.sv-panel{margin-top:12px}
+.sv-section{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.sv-section-title{font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.sv-row{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border);gap:8px}
+.sv-row:last-child{border-bottom:none}
+.sv-label{font-size:13px;color:var(--muted);flex:1}
+.sv-value{font-size:13px;color:var(--text);font-weight:600;text-align:right;flex:1}
+.sv-row-aw{flex-direction:column;gap:2px}
+.sv-aw-desc{font-size:13px;color:var(--text);font-weight:600}
+.sv-aw-cat{font-size:12px;color:var(--muted)}
+.sv-aw-upl{font-size:12px;color:var(--accent);font-weight:700}
+.sv-no-plan{font-size:12px;color:var(--amber);background:#1c1200;border:1px solid var(--amber);border-radius:6px;padding:8px 10px;margin-top:8px;line-height:1.5}
+
 .survey-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:18px}
 .survey-header{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .survey-sub{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.4}
@@ -215,7 +228,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.3</span>
+    <span class="version">v1.4.4</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -228,7 +241,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.3</span>
+    <span class="version">v1.4.4</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -321,7 +334,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.4.3';
+const APP_VERSION = 'v1.4.4';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -411,6 +424,180 @@ async function talliSb(path, opts) {
   return res.status === 204 ? null : res.json();
 }
 
+// ── SURVEY PANEL RENDERER ─────────────────────────────────────────────────
+function renderSurveyPanel(html, planUrl) {
+  var panel = g('survey_panel');
+  if (!panel) return;
+
+  // Parse the Blueprint HTML in a detached document
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(html, 'text/html');
+
+  // Helper: get text content of first element matching selector
+  function txt(sel, ctx) {
+    var el = (ctx || doc).querySelector(sel);
+    return el ? el.textContent.trim() : '—';
+  }
+
+  // Helper: get all rows from a table-like section
+  function rows(sel, ctx) {
+    var els = (ctx || doc).querySelectorAll(sel);
+    var out = [];
+    els.forEach(function(el) { out.push(el.textContent.trim()); });
+    return out;
+  }
+
+  // Extract key data by parsing Blueprint's HTML structure
+  // Blueprint renders a print document — we pull text from labelled cells
+  var allText = doc.body ? doc.body.innerText || doc.body.textContent : '';
+
+  // Use a simple line-by-line label:value extraction from the rendered text
+  function extract(label) {
+    var re = new RegExp(label + '[\\s\\S]*?([^\\n]+)', 'i');
+    var m = allText.match(re);
+    return m ? m[1].trim() : '—';
+  }
+
+  // Build the panel HTML
+  var out = '<div class="sv-panel">';
+
+  // ── FLOOR PLAN IMAGE ──
+  if (planUrl) {
+    out += '<div class="sv-section">' +
+      '<div class="sv-section-title">📐 Floor Plan</div>' +
+      '<img src="' + esc(planUrl) + '" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-top:8px" alt="Floor plan">' +
+    '</div>';
+  } else {
+    out += '<div class="sv-section">' +
+      '<div class="sv-section-title">📐 Floor Plan</div>' +
+      '<div class="sv-no-plan">Floor plan not yet available — ask the surveyor to re-save the job in Blueprint.</div>' +
+    '</div>';
+  }
+
+  // Parse Blueprint HTML into structured sections using table cells and labeled rows
+  // Blueprint's print HTML uses a consistent td/th structure
+  var tds = doc.querySelectorAll('td, th');
+  var pairs = {};
+  var lastLabel = null;
+  tds.forEach(function(el) {
+    var t = el.textContent.trim();
+    if (!t) return;
+    if (lastLabel && lastLabel !== t) {
+      pairs[lastLabel] = t;
+      lastLabel = null;
+    } else {
+      lastLabel = t;
+    }
+  });
+
+  // Pull structured data from Blueprint's table rows
+  // Each section is a <tr> with label in first td, value in second td
+  var trRows = doc.querySelectorAll('tr');
+  var dataMap = {};
+  trRows.forEach(function(tr) {
+    var cells = tr.querySelectorAll('td, th');
+    if (cells.length >= 2) {
+      var label = cells[0].textContent.trim();
+      var value = cells[1].textContent.trim();
+      if (label && value) dataMap[label] = value;
+    }
+  });
+
+  // ── DIMENSIONS ──
+  var dims = ['Width','Depth','Area'];
+  var dimRows = '';
+  dims.forEach(function(d) {
+    if (dataMap[d]) dimRows += svRow(d, dataMap[d]);
+  });
+  if (dimRows) out += svSection('📏 Dimensions', dimRows);
+
+  // ── FIXTURES ──
+  var fixtureRows = '';
+  trRows.forEach(function(tr) {
+    var cells = tr.querySelectorAll('td');
+    if (cells.length >= 2) {
+      var label = cells[0].textContent.trim();
+      var val   = cells[1].textContent.trim();
+      // Fixtures have ×N format
+      if (val.match(/^[×x]\d+$/) || val.match(/^\d+$/)) {
+        fixtureRows += svRow(label, val);
+      }
+    }
+  });
+  if (fixtureRows) out += svSection('🛁 Fixtures', fixtureRows);
+
+  // ── PRE-SURVEY ──
+  var preSurveyLabels = ['Property type','Room','Heating','Stopcock','Consumer unit',
+    'Water escape','Current suite','Current walls','Current floor','Ventilation'];
+  var preRows = '';
+  preSurveyLabels.forEach(function(l) {
+    if (dataMap[l]) preRows += svRow(l, dataMap[l]);
+  });
+  if (preRows) out += svSection('🏠 Pre-Survey', preRows);
+
+  // ── FINANCIAL SUMMARY ──
+  var finLabels = ['Base fitting fee','Additional works','Fitter total'];
+  var finRows = '';
+  finLabels.forEach(function(l) {
+    if (dataMap[l]) finRows += svRow(l, dataMap[l]);
+  });
+  if (finRows) out += svSection('💷 Financial Summary', finRows);
+
+  // ── PANEL SCHEDULE ──
+  var panelRows = '';
+  trRows.forEach(function(tr) {
+    var cells = tr.querySelectorAll('td');
+    if (cells.length >= 2) {
+      var label = cells[0].textContent.trim();
+      var val   = cells[1].textContent.trim();
+      if (val.match(/\d+\s*packs?/i)) {
+        panelRows += svRow(label, val);
+      }
+    }
+  });
+  if (panelRows) out += svSection('🔲 Panel Schedule', panelRows);
+
+  // ── ADDITIONAL WORKS ──
+  var awRows = '';
+  trRows.forEach(function(tr) {
+    var cells = tr.querySelectorAll('td');
+    if (cells.length >= 3) {
+      var desc = cells[0].textContent.trim();
+      var cat  = cells[1].textContent.trim();
+      var upl  = cells[2].textContent.trim();
+      // Skip header rows
+      if (desc && desc !== 'DESCRIPTION' && desc !== 'Description' && cat && cat !== 'CATEGORY') {
+        awRows += '<div class="sv-row sv-row-aw">' +
+          '<span class="sv-aw-desc">' + esc(desc) + '</span>' +
+          '<span class="sv-aw-cat">' + esc(cat) + '</span>' +
+          (upl ? '<span class="sv-aw-upl">' + esc(upl) + '</span>' : '') +
+        '</div>';
+      }
+    }
+  });
+  if (awRows) out += svSection('🔨 Additional Works', awRows);
+
+  // ── NOTES ──
+  if (dataMap['Notes'] || dataMap['NOTES']) {
+    out += svSection('📝 Notes', svRow('', dataMap['Notes'] || dataMap['NOTES']));
+  }
+
+  out += '</div>'; // end sv-panel
+  panel.innerHTML = out;
+  panel.style.display = 'block';
+}
+
+function svSection(title, content) {
+  return '<div class="sv-section"><div class="sv-section-title">' + title + '</div>' + content + '</div>';
+}
+
+function svRow(label, value) {
+  return '<div class="sv-row">' +
+    (label ? '<span class="sv-label">' + esc(label) + '</span>' : '') +
+    '<span class="sv-value">' + esc(value) + '</span>' +
+  '</div>';
+}
+
 // ── BLUEPRINT sb() WRAPPER ────────────────────────────────────────────────
 async function blueprintSb(path, opts) {
   opts = opts || {};
@@ -454,10 +641,10 @@ async function loadSurveyPlan() {
   try {
     // Blueprint stores bare numerics — strip Q prefix if fitter typed it
     var blueprintJobId = jobId.replace(/^Q/i, '');
-    var rows = await blueprintSb('blueprint_jobs?job_id=eq.' + encodeURIComponent(blueprintJobId) + '&select=survey_html&limit=1');
+    var rows = await blueprintSb('blueprint_jobs?job_id=eq.' + encodeURIComponent(blueprintJobId) + '&select=survey_html,plan_image_url&limit=1');
 
     if (!rows || !rows.length || !rows[0].survey_html) {
-      g('survey_iframe_wrap').style.display = 'none';
+      
       g('survey_hint').style.display = 'block';
       g('survey_hint').textContent = '⚠️ No floor plan found for Job ID ' + esc(jobId) + '. Measure the bathroom carefully and use your own judgement. Confirm whether the plan is achievable below.';
       g('survey_confirm_area').style.display = 'block';
@@ -466,11 +653,11 @@ async function loadSurveyPlan() {
       return;
     }
 
-    // Render survey HTML directly via srcdoc — blob URLs don't work in embedded iframe contexts
-    var html = rows[0].survey_html;
-    var iframe = g('survey_iframe');
-    iframe.srcdoc = html;
-    g('survey_iframe_wrap').style.display = 'block';
+    // Render native survey panel — no iframe needed
+    var surveyData = rows[0].survey_html;
+    var planUrl    = rows[0].plan_image_url || null;
+    renderSurveyPanel(surveyData, planUrl);
+    
     g('survey_hint').style.display = 'block';
     g('survey_hint').style.background = '#0a1a1c';
     g('survey_hint').style.borderColor = 'var(--teal)';
@@ -764,7 +951,7 @@ function abandonPackingCheck() {
   // Reset survey gate
   var surveyDone = g('survey_done_badge'); if (surveyDone) { surveyDone.style.display = 'none'; surveyDone.textContent = ''; }
   var surveyHint = g('survey_hint'); if (surveyHint) { surveyHint.style.display = 'none'; surveyHint.textContent = ''; }
-  var surveyIframe = g('survey_iframe_wrap'); if (surveyIframe) surveyIframe.style.display = 'none';
+  var surveyPanel = g('survey_panel'); if (surveyPanel) { surveyPanel.style.display = 'none'; surveyPanel.innerHTML = ''; }
   var surveyConfirm = g('survey_confirm_area'); if (surveyConfirm) surveyConfirm.style.display = 'none';
   var surveyLoadBtn = g('survey_load_btn'); if (surveyLoadBtn) { surveyLoadBtn.disabled = false; surveyLoadBtn.textContent = 'Load Floor Plan'; }
   var surveyNoBox = g('survey_no_plan'); if (surveyNoBox) surveyNoBox.style.display = 'none';
@@ -1327,7 +1514,7 @@ f1: function() {
       '<div class="survey-sub">Load the floor plan from Blueprint, measure the bathroom, and confirm the plan is achievable before proceeding.</div>' +
       '<button class="survey-load-btn" id="survey_load_btn" data-action="survey-load">Load Floor Plan</button>' +
       '<div class="survey-hint" id="survey_hint" style="display:none"></div>' +
-      '<div class="survey-iframe-wrap" id="survey_iframe_wrap"><iframe id="survey_iframe"></iframe></div>' +
+      '<div id="survey_panel" style="display:none"></div>' +
       '<div class="survey-confirm-area" id="survey_confirm_area" style="display:none">' +
         '<div class="field-label" style="margin-bottom:8px">Is the floor plan achievable? <span class="req">*</span></div>' +
         '<div class="survey-yn">' +
