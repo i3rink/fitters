@@ -1,4 +1,4 @@
-<!-- Fitters v1.4.0 -->
+<!-- Fitters v1.4.1 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -215,7 +215,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.0</span>
+    <span class="version">v1.4.1</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -228,7 +228,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.0</span>
+    <span class="version">v1.4.1</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -321,7 +321,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.4.0';
+const APP_VERSION = 'v1.4.1';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -441,7 +441,10 @@ var surveyGate = {
 };
 
 async function loadSurveyPlan() {
-  var jobId = (formData['f1_job_id'] || '').trim();
+  // Read from DOM directly as well as formData — covers mobile timing edge case
+  var jobId = (formData['f1_job_id'] || (g('f1_job_id') ? g('f1_job_id').value : '') || '').trim();
+  // Also sync formData in case the input event hadn't fired yet
+  if (jobId && g('f1_job_id')) { formData['f1_job_id'] = jobId; }
   if (!jobId) { toast('Enter Job ID first', 'error'); return; }
 
   var btn = g('survey_load_btn');
@@ -616,7 +619,8 @@ var packingCheck = {
 };
 
 async function loadPackingSlip() {
-  var jobId = (formData['f1_job_id'] || '').trim();
+  var jobId = (formData['f1_job_id'] || (g('f1_job_id') ? g('f1_job_id').value : '') || '').trim();
+  if (jobId && g('f1_job_id')) { formData['f1_job_id'] = jobId; }
   if (!jobId) { toast('Enter Job ID first', 'error'); return; }
 
   var btn   = g('ps_load_btn');
