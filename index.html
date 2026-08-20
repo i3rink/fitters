@@ -1,4 +1,4 @@
-<!-- Fitters v1.4.4 -->
+<!-- Fitters v1.4.5 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -228,7 +228,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.4</span>
+    <span class="version">v1.4.5</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -241,7 +241,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.4</span>
+    <span class="version">v1.4.5</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -334,7 +334,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.4.4';
+const APP_VERSION = 'v1.4.5';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -465,7 +465,7 @@ function renderSurveyPanel(html, planUrl) {
   if (planUrl) {
     out += '<div class="sv-section">' +
       '<div class="sv-section-title">📐 Floor Plan</div>' +
-      '<img src="' + esc(planUrl) + '" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-top:8px" alt="Floor plan">' +
+      '<img src="' + esc(planUrl) + '" style="width:100%;max-width:480px;display:block;margin:8px auto 0;border-radius:8px;border:1px solid var(--border)" alt="Floor plan">' +
     '</div>';
   } else {
     out += '<div class="sv-section">' +
@@ -689,16 +689,13 @@ function setSurveyAchievable(val) {
 
   var noBox = g('survey_no_plan');
   if (val === 'No') {
-    noBox.style.display = '';
-    // Strip-out section stays hidden — job cannot proceed
+    noBox.style.display = 'block';
     g('stripout_section').style.display = 'none';
-    // Badge
     var badge = g('survey_done_badge');
     if (badge) { badge.textContent = '✗ Not Achievable'; badge.style.color = 'var(--red)'; badge.style.display = 'inline-flex'; }
   } else if (val === 'Yes') {
     noBox.style.display = 'none';
-    // Unlock strip-out step
-    g('stripout_section').style.display = '';
+    g('stripout_section').style.display = 'block';
     var badge = g('survey_done_badge');
     if (badge) { badge.textContent = '✓ Confirmed'; badge.style.color = 'var(--green)'; badge.style.display = 'inline-flex'; }
   }
