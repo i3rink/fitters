@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.4 -->
+<!-- Fitters v1.5.5 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -311,7 +311,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.4</span>
+    <span class="version">v1.5.5</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -323,8 +323,9 @@ select option{background:var(--surface2)}
 <!-- HOME — JOBS LIST (all roles) -->
 <div id="screen-home" class="screen">
   <div class="app-header">
+    <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.4</span>
+    <span class="version">v1.5.5</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -337,7 +338,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.4</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.5</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -348,7 +349,8 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.4</span>
+    <span class="version">v1.5.5</span>
+    <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
   <div class="admin-tabs">
@@ -404,7 +406,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.4</span>
+    <span class="version">v1.5.5</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -454,7 +456,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.4';
+const APP_VERSION = 'v1.5.5';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -1094,7 +1096,32 @@ async function tlAssign(installId, userId, name) {
   } catch(err) { console.error('tlAssign:', err); toast('Assignment failed', 'error'); }
 }
 
-// ── MODAL HELPERS ─────────────────────────────────────────────────────────
+// ── ADMIN VIEW TOGGLE ─────────────────────────────────────────────────────
+var adminViewingAsFitter = false;
+
+function toggleAdminView() {
+  adminViewingAsFitter = !adminViewingAsFitter;
+  var btn = g('admin-view-toggle');
+  if (adminViewingAsFitter) {
+    // Show fitter jobs view
+    var backBtn = g('home-admin-back');
+    if (backBtn) backBtn.style.display = '';
+    showScreen('home');
+    loadFitterJobs();
+    if (btn) btn.textContent = '🔧 Admin view';
+  } else {
+    backToAdmin();
+  }
+}
+
+function backToAdmin() {
+  adminViewingAsFitter = false;
+  var backBtn = g('home-admin-back');
+  if (backBtn) backBtn.style.display = 'none';
+  var btn = g('admin-view-toggle');
+  if (btn) btn.textContent = '👷 Fitter view';
+  showScreen('admin');
+}
 function openModal()  { g('modal-overlay').style.display = 'flex'; }
 function closeModal() { g('modal-overlay').style.display = 'none'; g('modal-body').innerHTML = ''; formData = {}; }
 
@@ -1812,7 +1839,8 @@ function showScreen(id) {
 }
 
 function goHome() {
-  if (userHas('fitters_admin')) { showScreen('admin'); }
+  if (adminViewingAsFitter) { showScreen('home'); }
+  else if (userHas('fitters_admin')) { showScreen('admin'); }
   else if (userHas('fitters_tl')) { showScreen('tl'); }
   else { showScreen('home'); }
 }
@@ -2935,6 +2963,10 @@ document.addEventListener('click', function(e) {
   if (a === 'stripout-damage') { setStripoutDamage(btn.dataset.value); }
   if (a === 'stripout-cd')     { setCustomerDecision(btn.dataset.value); }
   if (a === 'stripout-confirm'){ confirmStripout(); }
+
+  // ── ADMIN VIEW TOGGLE ──
+  if (a === 'toggle-admin-view') { toggleAdminView(); }
+  if (a === 'back-to-admin')     { backToAdmin(); }
 
   // ── JOBS / NAVIGATION ──
   if (a === 'open-fitter-job') { openFitterJob(btn.dataset.installId); }
