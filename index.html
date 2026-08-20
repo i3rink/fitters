@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.2 -->
+<!-- Fitters v1.5.3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -311,7 +311,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.2</span>
+    <span class="version">v1.5.3</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -324,7 +324,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.2</span>
+    <span class="version">v1.5.3</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -337,7 +337,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.2</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.3</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -348,7 +348,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.2</span>
+    <span class="version">v1.5.3</span>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
   <div class="admin-tabs">
@@ -404,7 +404,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.2</span>
+    <span class="version">v1.5.3</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -454,7 +454,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.2';
+const APP_VERSION = 'v1.5.3';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -1145,6 +1145,27 @@ async function sbInsert(table, data) {
   });
   if (!res.ok) { const e = await res.text(); throw new Error(e); }
   return true;
+}
+
+// ── HELM sb() WRAPPER ─────────────────────────────────────────────────────
+async function sb(path, opts) {
+  opts = opts || {};
+  var prefer = opts.prefer;
+  var fetchOpts = Object.assign({}, opts);
+  delete fetchOpts.prefer;
+  var res = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({
+    headers: {
+      'apikey':        SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type':  'application/json',
+      ...(prefer ? { 'Prefer': prefer } : {})
+    }
+  }, fetchOpts));
+  if (!res.ok) {
+    var e = await res.json().catch(function(){ return {}; });
+    throw new Error(e.message || 'HTTP ' + res.status);
+  }
+  return res.status === 204 ? null : res.json();
 }
 
 // ── TALLI sb() WRAPPER ────────────────────────────────────────────────────
