@@ -1,4 +1,4 @@
-<!-- Fitters v1.4.1 -->
+<!-- Fitters v1.4.2 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -215,7 +215,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.1</span>
+    <span class="version">v1.4.2</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -228,7 +228,7 @@ select option{background:var(--surface2)}
 <div id="screen-home" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.4.1</span>
+    <span class="version">v1.4.2</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="home-content">
@@ -321,7 +321,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.4.1';
+const APP_VERSION = 'v1.4.2';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -466,12 +466,10 @@ async function loadSurveyPlan() {
       return;
     }
 
-    // Render survey HTML in sandboxed iframe via blob URL
+    // Render survey HTML directly via srcdoc — blob URLs don't work in embedded iframe contexts
     var html = rows[0].survey_html;
-    var blob = new Blob([html], { type: 'text/html' });
-    var blobUrl = URL.createObjectURL(blob);
     var iframe = g('survey_iframe');
-    iframe.src = blobUrl;
+    iframe.srcdoc = html;
     g('survey_iframe_wrap').style.display = '';
     g('survey_hint').style.display = '';
     g('survey_hint').style.background = '#0a1a1c';
@@ -1329,7 +1327,7 @@ f1: function() {
       '<div class="survey-sub">Load the floor plan from Blueprint, measure the bathroom, and confirm the plan is achievable before proceeding.</div>' +
       '<button class="survey-load-btn" id="survey_load_btn" data-action="survey-load">Load Floor Plan</button>' +
       '<div class="survey-hint" id="survey_hint"></div>' +
-      '<div class="survey-iframe-wrap" id="survey_iframe_wrap"><iframe id="survey_iframe" sandbox="allow-same-origin allow-scripts"></iframe></div>' +
+      '<div class="survey-iframe-wrap" id="survey_iframe_wrap"><iframe id="survey_iframe"></iframe></div>' +
       '<div class="survey-confirm-area" id="survey_confirm_area">' +
         '<div class="field-label" style="margin-bottom:8px">Is the floor plan achievable? <span class="req">*</span></div>' +
         '<div class="survey-yn">' +
