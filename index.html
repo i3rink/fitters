@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.5 -->
+<!-- Fitters v1.5.6 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -311,7 +311,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.5</span>
+    <span class="version">v1.5.6</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -325,7 +325,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.5</span>
+    <span class="version">v1.5.6</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -338,7 +338,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.5</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.6</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -349,7 +349,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.5</span>
+    <span class="version">v1.5.6</span>
     <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
@@ -406,7 +406,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.5</span>
+    <span class="version">v1.5.6</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -456,7 +456,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.5';
+const APP_VERSION = 'v1.5.6';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -1098,24 +1098,65 @@ async function tlAssign(installId, userId, name) {
 
 // ── ADMIN VIEW TOGGLE ─────────────────────────────────────────────────────
 var adminViewingAsFitter = false;
+var adminPreviewFitter = null; // { id, name }
 
 function toggleAdminView() {
-  adminViewingAsFitter = !adminViewingAsFitter;
+  if (adminViewingAsFitter) { backToAdmin(); return; }
+  // Show fitter picker modal
+  openFitterPickerModal();
+}
+
+async function openFitterPickerModal() {
+  try {
+    var allUsers = await sb('users?select=id,name,permitted_modules&order=name.asc') || [];
+    var fitters = allUsers.filter(function(u){
+      return u.permitted_modules && u.permitted_modules.indexOf('fitters') > -1;
+    });
+    var html = '<div class="modal-title">View as Fitter</div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Select a fitter to preview their job view</div>';
+    fitters.forEach(function(f) {
+      html += '<button class="tl-member-btn" data-action="preview-as-fitter" data-fitter-id="' + esc(f.id) + '" data-fitter-name="' + esc(f.name) + '">' +
+        '👷 ' + esc(f.name) + '</button>';
+    });
+    g('modal-body').innerHTML = html;
+    openModal();
+  } catch(err) { toast('Could not load fitters', 'error'); }
+}
+
+async function previewAsFitter(fitterId, fitterName) {
+  closeModal();
+  adminViewingAsFitter = true;
+  adminPreviewFitter = { id: fitterId, name: fitterName };
   var btn = g('admin-view-toggle');
-  if (adminViewingAsFitter) {
-    // Show fitter jobs view
-    var backBtn = g('home-admin-back');
-    if (backBtn) backBtn.style.display = '';
-    showScreen('home');
-    loadFitterJobs();
-    if (btn) btn.textContent = '🔧 Admin view';
-  } else {
-    backToAdmin();
-  }
+  if (btn) btn.textContent = '🔧 Admin view';
+  var backBtn = g('home-admin-back');
+  if (backBtn) backBtn.style.display = '';
+  showScreen('home');
+  // Load this fitter's jobs
+  var body = g('jobs-list-body');
+  body.innerHTML = '<div class="jobs-empty"><span class="spinner"></span> Loading ' + esc(fitterName) + '\'s jobs…</div>';
+  try {
+    var assignments = await sb('fitters_assignments?assigned_to_user=eq.' + fitterId + '&select=install_id') || [];
+    if (!assignments.length) {
+      body.innerHTML = '<div class="jobs-empty"><div class="jobs-empty-icon">📋</div>No jobs assigned to ' + esc(fitterName) + ' yet.</div>';
+      return;
+    }
+    var installIds = assignments.map(function(a){ return a.install_id; });
+    var installs = await sb('fitters_installs?id=in.(' + installIds.join(',') + ')&select=id,job_id,customer_name,address,postcode,install_date,status&order=install_date.asc') || [];
+    var html = '<div class="home-greeting" style="font-size:20px;font-weight:700;margin-bottom:4px">👷 ' + esc(fitterName) + '</div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:20px">Viewing as this fitter</div>';
+    if (!installs.length) {
+      html += '<div class="jobs-empty">No installs found.</div>';
+    } else {
+      installs.forEach(function(inst){ html += renderJobItem(inst, 'open-fitter-job'); });
+    }
+    body.innerHTML = html;
+  } catch(err) { body.innerHTML = '<div class="jobs-empty">⚠️ Could not load jobs.</div>'; }
 }
 
 function backToAdmin() {
   adminViewingAsFitter = false;
+  adminPreviewFitter = null;
   var backBtn = g('home-admin-back');
   if (backBtn) backBtn.style.display = 'none';
   var btn = g('admin-view-toggle');
@@ -2967,6 +3008,7 @@ document.addEventListener('click', function(e) {
   // ── ADMIN VIEW TOGGLE ──
   if (a === 'toggle-admin-view') { toggleAdminView(); }
   if (a === 'back-to-admin')     { backToAdmin(); }
+  if (a === 'preview-as-fitter') { previewAsFitter(btn.dataset.fitterId, btn.dataset.fitterName); }
 
   // ── JOBS / NAVIGATION ──
   if (a === 'open-fitter-job') { openFitterJob(btn.dataset.installId); }
