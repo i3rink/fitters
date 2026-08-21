@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.9 -->
+<!-- Fitters v1.5.10 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -311,7 +311,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.9</span>
+    <span class="version">v1.5.10</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -325,7 +325,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.9</span>
+    <span class="version">v1.5.10</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -338,7 +338,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.9</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.10</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -349,7 +349,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.9</span>
+    <span class="version">v1.5.10</span>
     <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
@@ -406,7 +406,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.9</span>
+    <span class="version">v1.5.10</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -456,7 +456,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.9';
+const APP_VERSION = 'v1.5.10';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -2489,7 +2489,7 @@ f1: function() {
     '<div class="field">' +
       '<div class="field-label">Pre-Installation Photos <span class="req">*</span></div>' +
       '<div class="field-hint">Upload at least 3 photos showing the current condition of the bathroom</div>' +
-      '<div class="file-upload" onclick="g(\'f1_preinstall_input\').click()">' +
+      '<div class="file-upload" data-action="open-preinstall-upload">' +
         '<input type="file" id="f1_preinstall_input" accept="image/*" multiple style="display:none">' +
         '<div class="up-icon">📷</div>' +
         '<div class="up-text">Tap to select photos (minimum 3)</div>' +
@@ -3027,6 +3027,9 @@ document.addEventListener('click', function(e) {
   var btn = e.target.closest('[data-action]');
   if (!btn) return;
   var a = btn.dataset.action;
+
+  // ── FILE UPLOADS ──
+  if (a === 'open-preinstall-upload') { var inp = g('f1_preinstall_input'); if (inp) inp.click(); }
 
   // ── EXISTING FORM ACTIONS ──
   if (a === 'f2-reqtype') {
