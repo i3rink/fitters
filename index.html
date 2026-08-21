@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.11 -->
+<!-- Fitters v1.5.12 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -319,7 +319,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.11</span>
+    <span class="version">v1.5.12</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -333,7 +333,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.11</span>
+    <span class="version">v1.5.12</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -346,7 +346,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.11</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.12</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -357,7 +357,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.11</span>
+    <span class="version">v1.5.12</span>
     <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
@@ -414,7 +414,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.11</span>
+    <span class="version">v1.5.12</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -464,7 +464,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.11';
+const APP_VERSION = 'v1.5.12';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -1285,7 +1285,11 @@ async function sb(path, opts) {
     var e = await res.json().catch(function(){ return {}; });
     throw new Error(e.message || 'HTTP ' + res.status);
   }
-  return res.status === 204 ? null : res.json();
+  if (res.status === 204 || res.status === 201) {
+    var txt = await res.text();
+    return txt ? JSON.parse(txt) : null;
+  }
+  return res.json();
 }
 
 // ── TALLI sb() WRAPPER ────────────────────────────────────────────────────
@@ -1307,7 +1311,11 @@ async function talliSb(path, opts) {
     console.error('talliSb error', res.status, path, e);
     throw new Error(e.message || 'HTTP ' + res.status);
   }
-  return res.status === 204 ? null : res.json();
+  if (res.status === 204 || res.status === 201) {
+    var txt = await res.text();
+    return txt ? JSON.parse(txt) : null;
+  }
+  return res.json();
 }
 
 // ── SURVEY PANEL RENDERER ─────────────────────────────────────────────────
@@ -1503,7 +1511,11 @@ async function blueprintSb(path, opts) {
     console.error('blueprintSb error', res.status, path, e);
     throw new Error(e.message || 'HTTP ' + res.status);
   }
-  return res.status === 204 ? null : res.json();
+  if (res.status === 204 || res.status === 201) {
+    var txt = await res.text();
+    return txt ? JSON.parse(txt) : null;
+  }
+  return res.json();
 }
 
 // ── SURVEY REVIEW GATE ────────────────────────────────────────────────────
