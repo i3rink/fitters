@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.7 -->
+<!-- Fitters v1.5.9 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -311,7 +311,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.7</span>
+    <span class="version">v1.5.9</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -325,7 +325,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.7</span>
+    <span class="version">v1.5.9</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -338,7 +338,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.7</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.9</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -349,7 +349,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.7</span>
+    <span class="version">v1.5.9</span>
     <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
@@ -406,7 +406,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.7</span>
+    <span class="version">v1.5.9</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -456,7 +456,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.7';
+const APP_VERSION = 'v1.5.9';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -752,16 +752,17 @@ async function lookupBlueprintJob(jobId) {
   if (status) status.textContent = 'Looking up job…';
   try {
     var rows = await blueprintSb('blueprint_jobs?job_id=eq.' + encodeURIComponent(jobId) +
-      '&select=job_id,customer_name,address,postcode&limit=1');
+      '&select=job_id,address,postcode,pre_survey&limit=1');
     if (!rows || !rows.length) {
       if (status) status.textContent = 'No Blueprint record found — fill in manually';
       return;
     }
     var job = rows[0];
-    // Populate fields
-    if (job.customer_name) {
+    // Extract customer name from pre_survey blob, falling back gracefully
+    var customerName = (job.pre_survey && job.pre_survey.customer_name) ? job.pre_survey.customer_name : null;
+    if (customerName) {
       var custEl = g('mi_customer');
-      if (custEl) { custEl.value = job.customer_name; formData['mi_customer'] = job.customer_name; }
+      if (custEl) { custEl.value = customerName; formData['mi_customer'] = customerName; }
     }
     if (job.address) {
       var addrEl = g('mi_address');
@@ -771,7 +772,8 @@ async function lookupBlueprintJob(jobId) {
       var pcEl = g('mi_postcode');
       if (pcEl) { pcEl.value = job.postcode.toUpperCase(); formData['mi_postcode'] = job.postcode.toUpperCase(); }
     }
-    if (status) status.textContent = '✓ Details pulled from Blueprint';
+    var populated = [customerName ? 'customer name' : null, job.address ? 'address' : null, job.postcode ? 'postcode' : null].filter(Boolean).join(', ');
+    if (status) status.textContent = '✓ Pulled from Blueprint: ' + populated + (customerName ? '' : ' — enter customer name manually');
   } catch(err) {
     console.error('lookupBlueprintJob:', err);
     if (status) status.textContent = 'Blueprint lookup failed — fill in manually';
