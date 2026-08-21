@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.10 -->
+<!-- Fitters v1.5.11 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -253,6 +253,14 @@ select option{background:var(--surface2)}
 .ps-btn.active-wrong{background:#1e1b4b;border-color:#6366f1;color:#c7d2fe}
 .ps-wrong-input{margin-top:8px}
 .ps-wrong-input input{width:100%;background:var(--surface);border:1px solid #6366f1;border-radius:7px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+.ps-extra-input{margin-top:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.ps-extra-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.ps-extra-input input[type=number]{width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:14px;font-weight:600;outline:none}
+.ps-damage-upload{background:var(--surface2);border:2px dashed var(--amber);border-radius:8px;padding:14px;text-align:center;min-height:52px}
+.ps-damage-upload.has-photo{border-color:var(--green);background:#0a1a0a}
+.ps-damage-upload .up-icon{font-size:22px;margin-bottom:4px}
+.ps-damage-upload .up-text{font-size:12px;color:var(--muted)}
+.ps-damage-upload.has-photo .up-text{color:var(--green)}
 .ps-confirm-btn{width:100%;padding:12px;background:var(--accent);color:#0f0f1a;border:none;border-radius:8px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:opacity .15s}
 .ps-confirm-btn:hover{opacity:.88}
 .ps-confirm-btn:disabled{opacity:.45;cursor:not-allowed}
@@ -311,7 +319,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.10</span>
+    <span class="version">v1.5.11</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -325,7 +333,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.10</span>
+    <span class="version">v1.5.11</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -338,7 +346,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.10</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.11</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -349,7 +357,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.10</span>
+    <span class="version">v1.5.11</span>
     <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
@@ -406,7 +414,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.10</span>
+    <span class="version">v1.5.11</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -456,7 +464,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.10';
+const APP_VERSION = 'v1.5.11';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -1675,7 +1683,7 @@ var packingCheck = {
   loaded:    false,   // true once lookup succeeded
   confirmed: false,   // true once fitter taps Confirm
   sessionId: null,
-  items: []           // [{ key, name, pickedQty, status, wrongDetail }]
+  items: []           // [{ key, name, pickedQty, status, wrongDetail, missingQty, damagePhotoFile }]
 };
 
 async function loadPackingSlip() {
@@ -1709,11 +1717,13 @@ async function loadPackingSlip() {
       .filter(function(item) { return item.jobQtys && item.jobQtys[normJobRef] !== undefined; })
       .map(function(item) {
         return {
-          key:         item.key  || '',
-          name:        item.name || item.key || 'Unknown item',
-          pickedQty:   item.jobQtys[normJobRef],
-          status:      '',
-          wrongDetail: ''
+          key:            item.key  || '',
+          name:           item.name || item.key || 'Unknown item',
+          pickedQty:      item.jobQtys[normJobRef],
+          status:         '',
+          wrongDetail:    '',
+          missingQty:     1,
+          damagePhotoFile: null
         };
       });
 
@@ -1755,6 +1765,30 @@ function renderPackingItems() {
         '<button class="ps-btn' + (s==='damaged'   ? ' active-damaged'   : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="damaged">⚠ Damaged</button>' +
         '<button class="ps-btn' + (s==='wrong'     ? ' active-wrong'     : '') + '" data-action="ps-status" data-idx="' + idx + '" data-status="wrong">↔ Wrong item</button>' +
       '</div>' +
+
+      // Missing — qty input
+      '<div class="ps-extra-input" id="ps_missing_' + idx + '" style="' + (s==='missing' ? '' : 'display:none') + '">' +
+        '<label class="ps-extra-label">How many missing?</label>' +
+        '<input type="number" min="1" max="' + item.pickedQty + '" ' +
+          'id="ps_missing_qty_' + idx + '" ' +
+          'value="' + item.missingQty + '" ' +
+          'data-action="ps-missing-qty" data-idx="' + idx + '">' +
+      '</div>' +
+
+      // Damaged — photo upload
+      '<div class="ps-extra-input" id="ps_damage_' + idx + '" style="' + (s==='damaged' ? '' : 'display:none') + '">' +
+        '<label class="ps-extra-label">Photo of damaged item (required)</label>' +
+        '<label class="ps-damage-upload' + (item.damagePhotoFile ? ' has-photo' : '') + '" style="position:relative;display:block;cursor:pointer">' +
+          '<input type="file" accept="image/*" capture="environment" ' +
+            'id="ps_damage_photo_' + idx + '" ' +
+            'data-action="ps-damage-photo" data-idx="' + idx + '" ' +
+            'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer">' +
+          '<div class="up-icon">📷</div>' +
+          '<div class="up-text">' + (item.damagePhotoFile ? '✓ Photo selected — tap to change' : 'Tap to photograph damage') + '</div>' +
+        '</label>' +
+      '</div>' +
+
+      // Wrong item — description input
       '<div class="ps-wrong-input" id="ps_wrong_' + idx + '" style="' + (s==='wrong' ? '' : 'display:none') + '">' +
         '<input type="text" placeholder="What was delivered instead? e.g. 1500mm bath" ' +
           'id="ps_wrong_detail_' + idx + '" ' +
@@ -1764,8 +1798,12 @@ function renderPackingItems() {
     '</div>';
   });
 
-  // Confirm button — only enabled when all items have a status
-  var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){ return i.status !== ''; });
+  // Confirm button — only enabled when all items have a status, missing has qty, damaged has photo
+  var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){
+    if (!i.status) return false;
+    if (i.status === 'damaged' && !i.damagePhotoFile) return false;
+    return true;
+  });
   html += '<button class="ps-confirm-btn" id="ps_confirm_btn" ' + (allDone ? '' : 'disabled') + ' data-action="ps-confirm">Confirm Packing Check</button>';
   html += '<button class="ps-abandon-btn" data-action="ps-abandon">Wrong job? Start over</button>';
   panel.innerHTML = html;
@@ -1892,7 +1930,7 @@ async function uploadMultiple(bucket, folder, files) {
 }
 
 // ── TALLI REMEDIAL WRITE ──────────────────────────────────────────────────
-async function createTalliRemedial(jobRef, fault, itemName, notes) {
+async function createTalliRemedial(jobRef, fault, itemName, notes, shortfallQty, photoUrl) {
   return talliSb('remedials', {
     method: 'POST',
     prefer: 'return=minimal',
@@ -1901,6 +1939,8 @@ async function createTalliRemedial(jobRef, fault, itemName, notes) {
       fault:         fault,
       item_name:     itemName || null,
       notes:         notes || null,
+      shortfall_qty: shortfallQty || null,
+      photo_url:     photoUrl || null,
       source:        'fitter',
       remedial_type: 'delivery',
       status:        'ready'
@@ -2781,12 +2821,6 @@ async function submitForm() {
     return;
   }
 
-  // F1: enforce minimum 3 pre-install photos
-  if (currentForm === 'f1' && f1PreInstallFiles.length < 3) {
-    toast('Please upload at least 3 pre-installation photos', 'error');
-    return;
-  }
-
   var btn = g('submit-btn');
   btn.disabled = true;
   btn.textContent = 'Submitting...';
@@ -2818,21 +2852,44 @@ async function submitForm() {
       if (problemItems.length) {
         var jobRef = formData['f1_job_id'] || '';
         var remFailed = false;
+
+        // Upload any damage photos first so we have URLs ready
+        for (var di = 0; di < problemItems.length; di++) {
+          var dItem = problemItems[di];
+          if (dItem.status === 'damaged' && dItem.damagePhotoFile) {
+            try {
+              btn.textContent = 'Uploading damage photo…';
+              var dFolder = (formData['f1_job_id'] || 'unknown').replace(/[^a-z0-9_-]/gi, '_');
+              var compressed = await compressImage(dItem.damagePhotoFile);
+              dItem.damagePhotoUrl = await uploadToStorage('fitters-pre-install', dFolder + '/damage', compressed);
+            } catch(ue) {
+              console.warn('Damage photo upload failed:', ue);
+              dItem.damagePhotoUrl = null;
+            }
+          }
+        }
+
+        btn.textContent = 'Saving…';
+
         for (var ri = 0; ri < problemItems.length; ri++) {
           var pItem = problemItems[ri];
-          var fault, notes;
+          var fault, notes, shortfallQty, photoUrl;
+          shortfallQty = null;
+          photoUrl = null;
           if (pItem.status === 'missing') {
             fault = 'Missing';
-            notes = null;
+            shortfallQty = pItem.missingQty || 1;
+            notes = pItem.missingQty + ' missing';
           } else if (pItem.status === 'damaged') {
             fault = 'Damaged';
-            notes = null;
+            photoUrl = pItem.damagePhotoUrl || null;
+            notes = photoUrl ? 'Damaged — photo attached' : 'Damaged';
           } else { // wrong
             fault = 'Wrong item';
             notes = 'Expected: ' + esc(pItem.name) + ' — Delivered: ' + esc(pItem.wrongDetail.trim());
           }
           try {
-            await createTalliRemedial(jobRef, fault, pItem.name, notes);
+            await createTalliRemedial(jobRef, fault, pItem.name, notes, shortfallQty, photoUrl);
           } catch(re) {
             console.warn('Remedial write failed for item:', pItem.name, re);
             remFailed = true;
@@ -3090,9 +3147,38 @@ document.addEventListener('input', function(e) {
   }
   if (el.dataset.action === 'ps-wrong-detail') {
     setPsWrongDetail(parseInt(el.dataset.idx, 10), el.value);
-    // Re-check confirm button state
-    var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){ return i.status !== ''; });
+    var allDone = packingCheck.items.length > 0 && packingCheck.items.every(function(i){
+      if (!i.status) return false;
+      if (i.status === 'damaged' && !i.damagePhotoFile) return false;
+      return true;
+    });
     var cb = g('ps_confirm_btn'); if (cb) cb.disabled = !allDone;
+  }
+  if (el.dataset.action === 'ps-missing-qty') {
+    var mIdx = parseInt(el.dataset.idx, 10);
+    var mVal = parseInt(el.value, 10);
+    var mMax = packingCheck.items[mIdx].pickedQty;
+    packingCheck.items[mIdx].missingQty = Math.min(Math.max(mVal || 1, 1), mMax);
+  }
+  if (el.dataset.action === 'ps-damage-photo') {
+    var dIdx = parseInt(el.dataset.idx, 10);
+    if (el.files && el.files[0]) {
+      packingCheck.items[dIdx].damagePhotoFile = el.files[0];
+      // Update label text without full re-render to preserve file input state
+      var uploadLabel = el.closest('.ps-damage-upload');
+      if (uploadLabel) {
+        uploadLabel.classList.add('has-photo');
+        var upText = uploadLabel.querySelector('.up-text');
+        if (upText) upText.textContent = '✓ Photo selected — tap to change';
+      }
+      // Re-check confirm button
+      var allDone2 = packingCheck.items.length > 0 && packingCheck.items.every(function(i){
+        if (!i.status) return false;
+        if (i.status === 'damaged' && !i.damagePhotoFile) return false;
+        return true;
+      });
+      var cb2 = g('ps_confirm_btn'); if (cb2) cb2.disabled = !allDone2;
+    }
   }
 }, true); // capture phase so it fires even after innerHTML rebuild
 
