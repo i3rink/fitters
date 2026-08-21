@@ -1,4 +1,4 @@
-<!-- Fitters v1.5.6 -->
+<!-- Fitters v1.5.7 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -311,7 +311,7 @@ select option{background:var(--surface2)}
 <div id="screen-gate" class="screen active">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.6</span>
+    <span class="version">v1.5.7</span>
   </div>
   <div class="success-screen">
     <div class="success-icon">🔒</div>
@@ -325,7 +325,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" id="home-admin-back" style="display:none" data-action="back-to-admin">← Admin</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.6</span>
+    <span class="version">v1.5.7</span>
     <div class="user-badge" id="home-user-badge">Loading...</div>
   </div>
   <div class="jobs-list" id="jobs-list-body">
@@ -338,7 +338,7 @@ select option{background:var(--surface2)}
   <div class="app-header">
     <button class="back-btn" onclick="goHome()">← Jobs</button>
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.6</span>
+    <span class="version" style="font-size:11px;color:var(--muted);margin-left:4px">v1.5.7</span>
     <div class="user-badge" id="job-user-badge"></div>
   </div>
   <div class="job-detail-header" id="job-detail-header"></div>
@@ -349,7 +349,7 @@ select option{background:var(--surface2)}
 <div id="screen-admin" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.6</span>
+    <span class="version">v1.5.7</span>
     <button class="admin-btn small secondary" id="admin-view-toggle" data-action="toggle-admin-view" style="margin-left:auto;margin-right:8px">👷 Fitter view</button>
     <div class="user-badge" id="admin-user-badge"></div>
   </div>
@@ -406,7 +406,7 @@ select option{background:var(--surface2)}
 <div id="screen-tl" class="screen">
   <div class="app-header">
     <div class="logo">Fitters<span>.</span></div>
-    <span class="version">v1.5.6</span>
+    <span class="version">v1.5.7</span>
     <div class="user-badge" id="tl-user-badge"></div>
   </div>
   <div class="jobs-list">
@@ -456,7 +456,7 @@ select option{background:var(--surface2)}
 <script>
 (function(){
 
-const APP_VERSION = 'v1.5.6';
+const APP_VERSION = 'v1.5.7';
 const SB_URL = 'https://xjnrmltfruzwmnhxplzn.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbnJtbHRmcnV6d21uaHhwbHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzMxNTAsImV4cCI6MjEwMDkwOTE1MH0.oDGbg7nGByR2ppjn8tYhTAz3tjUjPQkegbu40OH6Oq8';
 const TALLI_URL = 'https://jlqonolsenwyipgqgmfr.supabase.co';
@@ -720,6 +720,7 @@ function openAddInstall() {
   g('modal-body').innerHTML =
     '<div class="modal-title">Add Install</div>' +
     textField('mi_job_id',   'Job ID',          '4-digit Job ID', true) +
+    '<div id="mi_lookup_status" style="font-size:12px;color:var(--teal);margin:-8px 0 8px;min-height:16px"></div>' +
     textField('mi_customer', 'Customer Name',   'Full name', true) +
     textField('mi_address',  'Address',         'Full address', true) +
     postcodeField('mi_postcode', 'Postcode',    'e.g. KA1 2AB', true) +
@@ -728,15 +729,53 @@ function openAddInstall() {
     textArea('mi_notes', 'Notes', 'Optional — any relevant notes', false) +
     '<button class="admin-btn" style="width:100%;margin-top:8px" data-action="submit-add-install">Save Install</button>';
   openModal();
-  // Wire up modal fields to formData
   setTimeout(function() {
-    g('mi_job_id')   && g('mi_job_id').addEventListener('input',   function(){ formData['mi_job_id']   = this.value; });
+    var jobIdEl = g('mi_job_id');
+    if (jobIdEl) {
+      jobIdEl.addEventListener('input', function() {
+        formData['mi_job_id'] = this.value;
+        var val = this.value.trim().replace(/^Q/i, '');
+        if (val.length >= 3) { lookupBlueprintJob(val); }
+        else { g('mi_lookup_status').textContent = ''; }
+      });
+    }
     g('mi_customer') && g('mi_customer').addEventListener('input', function(){ formData['mi_customer'] = this.value; });
     g('mi_address')  && g('mi_address').addEventListener('input',  function(){ formData['mi_address']  = this.value; });
     g('mi_postcode') && g('mi_postcode').addEventListener('input', function(){ formData['mi_postcode'] = this.value.toUpperCase(); g('mi_postcode').value = this.value.toUpperCase(); });
     g('mi_date')     && g('mi_date').addEventListener('change',    function(){ formData['mi_date']     = this.value; });
     g('mi_notes')    && g('mi_notes').addEventListener('input',    function(){ formData['mi_notes']    = this.value; });
   }, 50);
+}
+
+async function lookupBlueprintJob(jobId) {
+  var status = g('mi_lookup_status');
+  if (status) status.textContent = 'Looking up job…';
+  try {
+    var rows = await blueprintSb('blueprint_jobs?job_id=eq.' + encodeURIComponent(jobId) +
+      '&select=job_id,customer_name,address,postcode&limit=1');
+    if (!rows || !rows.length) {
+      if (status) status.textContent = 'No Blueprint record found — fill in manually';
+      return;
+    }
+    var job = rows[0];
+    // Populate fields
+    if (job.customer_name) {
+      var custEl = g('mi_customer');
+      if (custEl) { custEl.value = job.customer_name; formData['mi_customer'] = job.customer_name; }
+    }
+    if (job.address) {
+      var addrEl = g('mi_address');
+      if (addrEl) { addrEl.value = job.address; formData['mi_address'] = job.address; }
+    }
+    if (job.postcode) {
+      var pcEl = g('mi_postcode');
+      if (pcEl) { pcEl.value = job.postcode.toUpperCase(); formData['mi_postcode'] = job.postcode.toUpperCase(); }
+    }
+    if (status) status.textContent = '✓ Details pulled from Blueprint';
+  } catch(err) {
+    console.error('lookupBlueprintJob:', err);
+    if (status) status.textContent = 'Blueprint lookup failed — fill in manually';
+  }
 }
 
 async function submitAddInstall() {
